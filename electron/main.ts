@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -428,7 +428,76 @@ ipcMain.handle('store-set', (_event, key: string, value: unknown) => {
   store.set(key, value);
 });
 
-app.whenReady().then(createWindow);
+function buildAppMenu(): Menu {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { role: 'resetZoom' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'close' },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'GitHub Repository',
+          click: () => { shell.openExternal('https://github.com/happy-coder-ua/system-glancer'); },
+        },
+        { type: 'separator' },
+        {
+          label: 'About System Glancer',
+          click: () => { app.showAboutPanel(); },
+        },
+      ],
+    },
+  ];
+
+  return Menu.buildFromTemplate(template);
+}
+
+app.whenReady().then(() => {
+  app.setAboutPanelOptions({
+    applicationName: 'System Glancer',
+    applicationVersion: app.getVersion(),
+    authors: ['Serhii Kaminskyi'],
+    website: 'https://github.com/happy-coder-ua/system-glancer',
+  });
+  Menu.setApplicationMenu(buildAppMenu());
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
