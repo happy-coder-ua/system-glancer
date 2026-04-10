@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import Store from 'electron-store';
 
@@ -312,37 +312,38 @@ async function getProcesses(): Promise<ProcessSnapshot[]> {
 
 async function getSensors(): Promise<SensorSnapshot[]> {
   try {
-    const { stdout } = await execFileAsync('sensors', []);
+    const hwmonBase = '/sys/class/hwmon';
     const result: SensorSnapshot[] = [];
+    const devices = await readdir(hwmonBase).catch(() => [] as string[]);
 
-    stdout
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .forEach((line) => {
-        if (!line.includes('°C')) {
-          return;
-        }
+    for (const device of devices) {
+      const devicePath = path.join(hwmonBase, device);
+      const deviceName = await readFile(path.join(devicePath, 'name'), 'utf8').then((s) => s.trim()).catch(() => device);
 
-        if (!line.includes(':')) {
-          if (line.startsWith('(') && result.length > 0) {
-            const previous = result[result.length - 1];
-            previous.value = previous.value ? `${previous.value} ${line}` : line;
-          }
-          return;
-        }
+      const entries = await readdir(devicePath).catch(() => [] as string[]);
+      const tempInputs = entries.filter((e) => /^temp\d+_input$/.test(e)).sort();
 
-        const [namePart, ...valueParts] = line.split(':');
-        const value = valueParts.join(':').trim();
-        if (!value.includes('°C')) {
-          return;
-        }
+      for (const input of tempInputs) {
+        const index = input.match(/\d+/)?.[0] ?? '';
+        const raw = await readFile(path.join(devicePath, input), 'utf8').catch(() => '');
+        if (!raw) continue;
 
-        result.push({
-          name: namePart.trim(),
-          value,
-        });
-      });
+        const current = Number(raw.trim()) / 1000;
+        if (!Number.isFinite(current)) continue;
+
+        const label = await readFile(path.join(devicePath, `temp${index}_label`), 'utf8').then((s) => s.trim()).catch(() => '');
+        const high = await readFile(path.join(devicePath, `temp${index}_max`), 'utf8').then((s) => Number(s.trim()) / 1000).catch(() => null);
+        const crit = await readFile(path.join(devicePath, `temp${index}_crit`), 'utf8').then((s) => Number(s.trim()) / 1000).catch(() => null);
+
+        const name = label || `${deviceName} temp${index}`;
+        const limits: string[] = [];
+        if (high !== null && Number.isFinite(high)) limits.push(`high = +${high.toFixed(1)}°C`);
+        if (crit !== null && Number.isFinite(crit)) limits.push(`crit = +${crit.toFixed(1)}°C`);
+
+        const value = `+${current.toFixed(1)}°C` + (limits.length > 0 ? `  (${limits.join(', ')})` : '');
+        result.push({ name, value });
+      }
+    }
 
     return result.slice(0, 8);
   } catch {

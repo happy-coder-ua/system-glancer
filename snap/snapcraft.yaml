@@ -31,7 +31,6 @@ parts:
       - libxkbfile-dev
     stage-packages:
       - coreutils
-      - lm-sensors
     override-build: |
       export NPM_CONFIG_LOGLEVEL=error
       export NPM_CONFIG_UPDATE_NOTIFIER=false
