@@ -1,6 +1,6 @@
 name: system-glancer
 base: core22
-version: '0.1.0'
+version: '1.0.0'
 summary: Glances-inspired system monitor for Ubuntu
 description: |
   Desktop system monitor showing live CPU, memory, disk, network,
