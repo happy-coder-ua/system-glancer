@@ -24,8 +24,7 @@ parts:
       - libx11-dev
       - libxkbfile-dev
     override-build: |
-      npm ci
-      npm run build
+      craftctl default
       mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
       cp -r release/linux-unpacked/* $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
