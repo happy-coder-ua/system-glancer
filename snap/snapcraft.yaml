@@ -24,6 +24,10 @@ parts:
       - libx11-dev
       - libxkbfile-dev
     override-build: |
+      export NPM_CONFIG_LOGLEVEL=error
+      export NPM_CONFIG_UPDATE_NOTIFIER=false
+      export NPM_CONFIG_FUND=false
+      export NPM_CONFIG_AUDIT=false
       npm ci
       npm run build:dir
       mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
