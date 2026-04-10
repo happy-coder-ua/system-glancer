@@ -18,6 +18,7 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --linux",
     "build:dir": "tsc && vite build && electron-builder --linux dir",
+    "build:snap": "snapcraft",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
