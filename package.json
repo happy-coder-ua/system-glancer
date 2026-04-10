@@ -1,11 +1,15 @@
 {
-  "name": "ubuntu-glancer",
-  "productName": "Ubuntu Glancer",
+  "name": "system-glancer",
+  "productName": "System Glancer",
   "version": "0.1.0",
   "description": "Ubuntu system monitor desktop app inspired by Glances",
   "author": {
     "name": "Serhii Kaminskyi",
     "email": "serhii.kaminskyi@ukr.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/happy-coder-ua/system-glancer.git"
   },
   "private": true,
   "main": "dist-electron/main.js",
@@ -20,8 +24,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "build": {
-    "appId": "com.serhiikaminskyi.ubuntu-glancer",
-    "productName": "Ubuntu Glancer",
+    "appId": "com.serhiikaminskyi.system-glancer",
+    "productName": "System Glancer",
     "directories": {
       "output": "release"
     },
@@ -33,6 +37,11 @@
       "target": ["AppImage", "deb"],
       "icon": "build/icon.png",
       "category": "System"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "happy-coder-ua",
+      "repo": "system-glancer"
     }
   },
   "dependencies": {

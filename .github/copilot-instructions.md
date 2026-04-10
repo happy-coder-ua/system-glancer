@@ -1,4 +1,4 @@
-# Copilot Instructions for Ubuntu Glancer
+# Copilot Instructions for System Glancer
 
 ## Language
 
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-**Ubuntu Glancer** — desktop system monitor for Ubuntu inspired by Glances.
+**System Glancer** — desktop system monitor for Ubuntu inspired by Glances.
 
 ## Tech Stack
 

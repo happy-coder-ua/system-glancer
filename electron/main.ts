@@ -57,7 +57,7 @@ function createWindow(): void {
     height: 940,
     minWidth: 1180,
     minHeight: 760,
-    title: 'Ubuntu Glancer',
+    title: 'System Glancer',
     backgroundColor: '#08110f',
     icon: path.join(__dirname, '../build/icon.png'),
     webPreferences: {

@@ -125,7 +125,7 @@ export function App(): ReactElement {
       <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col px-5 py-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 rounded-[14px] border border-[var(--gl-border)] bg-[var(--gl-bg-elevated)] px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.38em] text-[var(--gl-accent-soft)]">Ubuntu Glancer</div>
+            <div className="text-[11px] uppercase tracking-[0.38em] text-[var(--gl-accent-soft)]">System Glancer</div>
             <h1 className="mt-2 font-mono text-3xl font-semibold text-[var(--gl-text)]">System Monitor</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--gl-text-muted)]">Glances-inspired desktop dashboard for Ubuntu with CPU, memory, load, disks, network, process, and sensor visibility.</p>
             {snapshot ? (

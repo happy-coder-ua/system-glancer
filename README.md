@@ -1,8 +1,8 @@
-# Ubuntu Glancer
+# System Glancer
 
-Ubuntu Glancer is an Electron desktop app inspired by Glances. It shows live CPU, memory, disk, network, process, and temperature metrics for Ubuntu machines.
+System Glancer is an Electron desktop app inspired by Glances. It shows live CPU, memory, disk, network, process, and temperature metrics for Ubuntu machines.
 
-![Ubuntu Glancer](build/promo.png)
+![System Glancer](build/promo.png)
 
 ## Stack
 

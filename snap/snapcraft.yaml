@@ -1,0 +1,46 @@
+name: system-glancer
+base: core22
+version: '0.1.0'
+summary: Glances-inspired system monitor for Ubuntu
+description: |
+  Desktop system monitor showing live CPU, memory, disk, network,
+  process, and temperature metrics for Ubuntu machines.
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+
+parts:
+  system-glancer:
+    plugin: npm
+    source: .
+    npm-include-node: true
+    npm-node-version: "20.18.3"
+    build-packages:
+      - python3
+      - make
+      - g++
+      - libx11-dev
+      - libxkbfile-dev
+    override-build: |
+      npm ci
+      npm run build
+      mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
+      cp -r release/linux-unpacked/* $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
+      cp build/icon.png $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/system-glancer.png
+
+apps:
+  system-glancer:
+    command: opt/system-glancer/system-glancer --no-sandbox
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-observe
+      - hardware-observe
+      - mount-observe
+      - system-observe
+      - process-control
