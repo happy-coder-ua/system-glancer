@@ -1,7 +1,7 @@
 {
   "name": "system-glancer",
   "productName": "System Glancer",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Ubuntu system monitor desktop app inspired by Glances",
   "author": {
     "name": "Serhii Kaminskyi",
@@ -35,7 +35,10 @@
       "dist-electron/**/*"
     ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "build/icon.png",
       "category": "System"
     },

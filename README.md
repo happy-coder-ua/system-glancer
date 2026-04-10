@@ -30,6 +30,10 @@ System Glancer is an Electron desktop app inspired by Glances. It shows live CPU
 - Custom application menu with File, Edit, View, Window, Help (GitHub link + About panel)
 - Stored refresh interval preference via electron-store
 
+## Versioning
+
+Follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). Version in `package.json` must be bumped before every commit. A `pre-commit` hook enforces this.
+
 ## Notes
 
 - The app is optimized for Ubuntu and gracefully degrades when optional tools like `sensors` are not installed.

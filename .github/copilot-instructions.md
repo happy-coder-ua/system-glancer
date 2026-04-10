@@ -26,3 +26,4 @@
 - Prefer reusable dashboard components in atomic design folders.
 - Use Tailwind utility classes and theme variables from `index.css`.
 - Custom application menu via `Menu.buildFromTemplate()` — File, Edit, View, Window, Help (GitHub link + About panel). Do not use the default Electron menu.
+- **Versioning:** Semantic Versioning (`MAJOR.MINOR.PATCH`). Bump `version` in `package.json` before every commit. A `pre-commit` hook enforces this.
