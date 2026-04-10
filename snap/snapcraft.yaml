@@ -29,7 +29,23 @@ parts:
       export NPM_CONFIG_FUND=false
       export NPM_CONFIG_AUDIT=false
       npm ci
-      npm run build:dir
+
+      # Build frontend and electron code (skip electron-builder — npm ls broken in snap)
+      npx tsc
+      npx vite build
+
+      # Assemble electron app manually from npm electron dist
+      ELECTRON_DIST="node_modules/electron/dist"
+      APP_DIR="release/linux-unpacked"
+
+      mkdir -p "$APP_DIR/resources/app"
+      cp -r "$ELECTRON_DIST"/. "$APP_DIR"/
+      mv "$APP_DIR/electron" "$APP_DIR/system-glancer"
+
+      cp package.json "$APP_DIR/resources/app/"
+      cp -r dist "$APP_DIR/resources/app/"
+      cp -r dist-electron "$APP_DIR/resources/app/"
+
       mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
       cp -r release/linux-unpacked/. $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
