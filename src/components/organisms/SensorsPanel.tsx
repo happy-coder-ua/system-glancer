@@ -138,7 +138,7 @@ export function SensorsPanel({ sensors }: SensorsPanelProps): ReactElement {
               />
             </div>
           );
-        }) : <div className="rounded-[12px] border border-dashed border-[var(--gl-border)] px-4 py-6 text-sm text-[var(--gl-text-dim)]">No sensor data found. Install lm-sensors to enable temperature readings.</div>}
+        }) : <div className="rounded-[12px] border border-dashed border-[var(--gl-border)] px-4 py-6 text-sm text-[var(--gl-text-dim)]">No sensor data found. If installed as a snap, run: sudo snap connect system-glancer:hardware-observe</div>}
       </div>
     </Panel>
   );
