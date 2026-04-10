@@ -13,10 +13,10 @@ architectures:
 
 parts:
   system-glancer:
-    plugin: npm
+    plugin: nil
     source: .
-    npm-include-node: true
-    npm-node-version: "20.18.3"
+    build-snaps:
+      - node/20/stable
     build-packages:
       - python3
       - make
@@ -24,9 +24,10 @@ parts:
       - libx11-dev
       - libxkbfile-dev
     override-build: |
-      craftctl default
+      npm ci
+      npm run build:dir
       mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
-      cp -r release/linux-unpacked/* $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
+      cp -r release/linux-unpacked/. $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
       cp build/icon.png $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/system-glancer.png
