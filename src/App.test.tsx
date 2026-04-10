@@ -11,7 +11,12 @@ describe('App', () => {
     });
 
     expect(screen.getByText('ubuntu-box')).toBeInTheDocument();
-    expect(screen.getByText('gnome-shell')).toBeInTheDocument();
-    expect(screen.getByText('Core 0')).toBeInTheDocument();
+  expect(screen.getByText('gnome shell')).toBeInTheDocument();
+  expect(screen.getByText('User sekam')).toBeInTheDocument();
+    expect(screen.getByText('CPU core 1')).toBeInTheDocument();
+    expect(screen.getByText(/Uptime 2d 4h 12m/)).toBeInTheDocument();
+    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText(/RX 2\.0 KB\/s/)).toBeInTheDocument();
+    expect(screen.getAllByText('Terminate')[0]).toBeInTheDocument();
   });
 });

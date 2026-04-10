@@ -37,11 +37,17 @@ export interface NetworkSnapshot {
   address: string;
   family: string;
   internal: boolean;
+  rxBytesPerSecond: number;
+  txBytesPerSecond: number;
 }
 
 export interface ProcessSnapshot {
   pid: number;
+  user: string;
+  state: string;
+  elapsed: string;
   command: string;
+  commandLine: string;
   cpu: number;
   memory: number;
 }
@@ -49,6 +55,11 @@ export interface ProcessSnapshot {
 export interface SensorSnapshot {
   name: string;
   value: string;
+}
+
+export interface KillProcessResult {
+  ok: boolean;
+  error?: string;
 }
 
 export interface SystemSnapshot {

@@ -3,7 +3,24 @@
 :root {
   color-scheme: dark;
   font-family: 'JetBrains Mono', 'Fira Code', 'IBM Plex Sans', sans-serif;
-  background: #030807;
+  --gl-bg: #2f363a;
+  --gl-bg-elevated: #363f43;
+  --gl-panel: #394247;
+  --gl-panel-soft: #3d474c;
+  --gl-border: #58656e;
+  --gl-border-soft: #4e5b64;
+  --gl-text: #d8dddf;
+  --gl-text-muted: #a0aaae;
+  --gl-text-dim: #7f8a90;
+  --gl-accent: #34d399;
+  --gl-accent-soft: #6ee7b7;
+  --gl-cpu: #32d296;
+  --gl-memory: #3b82f6;
+  --gl-load: #84cc16;
+  --gl-warning: #f4c542;
+  --gl-danger: #f87171;
+  --gl-info: #22c55e;
+  background: var(--gl-bg);
 }
 
 html,
@@ -14,7 +31,8 @@ body,
 
 body {
   margin: 0;
-  background: #030807;
+  background: linear-gradient(180deg, #363f43 0%, #2f363a 18%, #2c3337 100%);
+  color: var(--gl-text);
 }
 
 * {
@@ -25,4 +43,8 @@ button,
 select,
 input {
   font: inherit;
+}
+
+::selection {
+  background: rgba(52, 211, 153, 0.28);
 }

@@ -14,6 +14,10 @@ export function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+export function formatRatePerSecond(value: number): string {
+  return `${formatBytes(value)}/s`;
+}
+
 export function formatLoad(value: number): string {
   return value.toFixed(2);
 }

@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import Store from 'electron-store';
 
@@ -26,11 +27,17 @@ interface NetworkSnapshot {
   address: string;
   family: string;
   internal: boolean;
+  rxBytesPerSecond: number;
+  txBytesPerSecond: number;
 }
 
 interface ProcessSnapshot {
   pid: number;
+  user: string;
+  state: string;
+  elapsed: string;
   command: string;
+  commandLine: string;
   cpu: number;
   memory: number;
 }
@@ -41,6 +48,8 @@ interface SensorSnapshot {
 }
 
 let previousCpuTimes: CpuTimesSnapshot[] | null = null;
+let previousNetworkStats: Record<string, { rxBytes: number; txBytes: number }> | null = null;
+let previousNetworkTimestamp: number | null = null;
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -136,13 +145,30 @@ async function getSwapInfo(): Promise<{ total: number; used: number }> {
 
 async function getDiskInfo(): Promise<DiskSnapshot[]> {
   try {
-    const targets = ['/'];
-    const homeDirectory = os.homedir();
-    if (homeDirectory && homeDirectory !== '/') {
-      targets.push(homeDirectory);
-    }
+    const ignoredTypes = new Set([
+      'autofs',
+      'bpf',
+      'configfs',
+      'cgroup',
+      'cgroup2',
+      'debugfs',
+      'devpts',
+      'devtmpfs',
+      'efivarfs',
+      'fusectl',
+      'hugetlbfs',
+      'mqueue',
+      'proc',
+      'pstore',
+      'rpc_pipefs',
+      'securityfs',
+      'squashfs',
+      'sysfs',
+      'tmpfs',
+      'tracefs',
+    ]);
 
-    const { stdout } = await execFileAsync('df', ['-kP', ...targets]);
+    const { stdout } = await execFileAsync('df', ['-kPT']);
     const seenMounts = new Set<string>();
 
     return stdout
@@ -152,46 +178,109 @@ async function getDiskInfo(): Promise<DiskSnapshot[]> {
       .filter(Boolean)
       .map((line) => line.split(/\s+/))
       .map((parts) => {
-        const total = Number(parts[1]) * 1024;
-        const used = Number(parts[2]) * 1024;
-        const mount = parts[5] ?? parts[parts.length - 1] ?? '/';
+        const filesystem = parts[0] ?? '';
+        const type = parts[1] ?? '';
+        const total = Number(parts[2]) * 1024;
+        const used = Number(parts[3]) * 1024;
+        const mount = parts[6] ?? parts[parts.length - 1] ?? '/';
 
         return {
+          filesystem,
+          type,
           mount,
           used,
           total,
           usage: total > 0 ? used / total : 0,
         };
       })
+      .filter((disk) => !ignoredTypes.has(disk.type))
+      .filter((disk) => !disk.mount.startsWith('/snap/'))
+      .filter((disk) => !disk.mount.startsWith('/proc/'))
+      .filter((disk) => !disk.mount.startsWith('/sys/'))
+      .filter((disk) => !disk.mount.startsWith('/dev/'))
+      .filter((disk) => disk.total > 0)
       .filter((disk) => {
         if (seenMounts.has(disk.mount)) {
           return false;
         }
         seenMounts.add(disk.mount);
         return true;
-      });
+      })
+      .map(({ mount, used, total, usage }) => ({
+        mount,
+        used,
+        total,
+        usage,
+      }))
+      .sort((left, right) => left.mount.localeCompare(right.mount));
   } catch {
     return [];
   }
 }
 
-function getNetworkInfo(): NetworkSnapshot[] {
+async function getNetworkInfo(): Promise<NetworkSnapshot[]> {
   const interfaces = os.networkInterfaces();
-
-  return Object.entries(interfaces)
+  const visibleInterfaces = Object.entries(interfaces)
     .flatMap(([name, entries]) => (entries ?? []).map((entry) => ({ name, entry })))
-    .filter(({ entry }) => !entry.internal)
+    .filter(({ entry }) => !entry.internal);
+
+  let counters: Record<string, { rxBytes: number; txBytes: number }> = {};
+  try {
+    const procNetDev = await readFile('/proc/net/dev', 'utf-8');
+    counters = procNetDev
+      .split('\n')
+      .slice(2)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .reduce<Record<string, { rxBytes: number; txBytes: number }>>((accumulator, line) => {
+        const [namePart, metricsPart] = line.split(':');
+        if (!namePart || !metricsPart) {
+          return accumulator;
+        }
+
+        const values = metricsPart.trim().split(/\s+/);
+        accumulator[namePart.trim()] = {
+          rxBytes: Number(values[0]) || 0,
+          txBytes: Number(values[8]) || 0,
+        };
+        return accumulator;
+      }, {});
+  } catch {
+    counters = {};
+  }
+
+  const now = Date.now();
+  const elapsedSeconds = previousNetworkTimestamp ? Math.max((now - previousNetworkTimestamp) / 1000, 0.001) : null;
+
+  const snapshots = visibleInterfaces
     .map(({ name, entry }) => ({
       name,
       address: entry.address,
       family: entry.family,
       internal: entry.internal,
+      rxBytesPerSecond: elapsedSeconds && previousNetworkStats?.[name]
+        ? Math.max(0, (counters[name]?.rxBytes ?? 0) - previousNetworkStats[name].rxBytes) / elapsedSeconds
+        : 0,
+      txBytesPerSecond: elapsedSeconds && previousNetworkStats?.[name]
+        ? Math.max(0, (counters[name]?.txBytes ?? 0) - previousNetworkStats[name].txBytes) / elapsedSeconds
+        : 0,
     }));
+
+  previousNetworkStats = counters;
+  previousNetworkTimestamp = now;
+
+  return snapshots;
 }
 
 async function getProcesses(): Promise<ProcessSnapshot[]> {
   try {
-    const { stdout } = await execFileAsync('ps', ['-eo', 'pid=,comm=,%cpu=,%mem=', '--sort=-%cpu']);
+    const { stdout } = await execFileAsync('ps', [
+      '-ww',
+      '-eo',
+      'pid=,user=,state=,etime=,%cpu=,%mem=,comm=,args=',
+      '--sort=-%cpu',
+      '--no-headers',
+    ]);
 
     return stdout
       .split('\n')
@@ -199,16 +288,20 @@ async function getProcesses(): Promise<ProcessSnapshot[]> {
       .filter(Boolean)
       .slice(0, 8)
       .map((line) => {
-        const match = line.match(/^(\d+)\s+(.+?)\s+([\d.]+)\s+([\d.]+)$/);
+        const match = line.match(/^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+([\d.]+)\s+([\d.]+)\s+(\S+)\s+(.+)$/);
         if (!match) {
           return null;
         }
 
         return {
           pid: Number(match[1]),
-          command: match[2],
-          cpu: Number(match[3]),
-          memory: Number(match[4]),
+          user: match[2],
+          state: match[3],
+          elapsed: match[4],
+          cpu: Number(match[5]),
+          memory: Number(match[6]),
+          command: match[7],
+          commandLine: match[8],
         };
       })
       .filter((process): process is ProcessSnapshot => process !== null);
@@ -220,19 +313,38 @@ async function getProcesses(): Promise<ProcessSnapshot[]> {
 async function getSensors(): Promise<SensorSnapshot[]> {
   try {
     const { stdout } = await execFileAsync('sensors', []);
+    const result: SensorSnapshot[] = [];
 
-    return stdout
+    stdout
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line.includes('°C'))
-      .slice(0, 8)
-      .map((line) => {
-        const [namePart, valuePart] = line.split(':');
-        return {
+      .filter(Boolean)
+      .forEach((line) => {
+        if (!line.includes('°C')) {
+          return;
+        }
+
+        if (!line.includes(':')) {
+          if (line.startsWith('(') && result.length > 0) {
+            const previous = result[result.length - 1];
+            previous.value = previous.value ? `${previous.value} ${line}` : line;
+          }
+          return;
+        }
+
+        const [namePart, ...valueParts] = line.split(':');
+        const value = valueParts.join(':').trim();
+        if (!value.includes('°C')) {
+          return;
+        }
+
+        result.push({
           name: namePart.trim(),
-          value: valuePart?.trim() ?? '',
-        };
+          value,
+        });
       });
+
+    return result.slice(0, 8);
   } catch {
     return [];
   }
@@ -258,10 +370,11 @@ async function getSystemSnapshot() {
   const memoryTotal = os.totalmem();
   const memoryFree = os.freemem();
   const swap = await getSwapInfo();
-  const [diskUsage, processes, sensors] = await Promise.all([
+  const [diskUsage, processes, sensors, networks] = await Promise.all([
     getDiskInfo(),
     getProcesses(),
     getSensors(),
+    getNetworkInfo(),
   ]);
 
   return {
@@ -283,7 +396,7 @@ async function getSystemSnapshot() {
       uptime: formatUptime(os.uptime()),
     },
     disks: diskUsage,
-    networks: getNetworkInfo(),
+    networks,
     processes,
     sensors,
     timestamp: Date.now(),
@@ -292,6 +405,18 @@ async function getSystemSnapshot() {
 
 ipcMain.handle('system:get-snapshot', async () => {
   return getSystemSnapshot();
+});
+
+ipcMain.handle('system:kill-process', async (_event, pid: number) => {
+  try {
+    process.kill(pid, 'SIGTERM');
+    return { ok: true };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to terminate process',
+    };
+  }
 });
 
 ipcMain.handle('store-get', (_event, key: string) => {

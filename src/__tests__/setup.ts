@@ -34,10 +34,26 @@ const snapshot: SystemSnapshot = {
     { mount: '/', used: 20, total: 100, usage: 0.2 },
   ],
   networks: [
-    { name: 'enp0s31f6', address: '192.168.0.10', family: 'IPv4', internal: false },
+    {
+      name: 'enp0s31f6',
+      address: '192.168.0.10',
+      family: 'IPv4',
+      internal: false,
+      rxBytesPerSecond: 2048,
+      txBytesPerSecond: 1024,
+    },
   ],
   processes: [
-    { pid: 1001, command: 'gnome-shell', cpu: 3.2, memory: 2.1 },
+    {
+      pid: 1001,
+      user: 'sekam',
+      state: 'R',
+      elapsed: '00:12',
+      command: '/usr/bin/gnome-shell',
+      commandLine: '/usr/bin/gnome-shell --wayland',
+      cpu: 3.2,
+      memory: 2.1,
+    },
   ],
   sensors: [
     { name: 'Core 0', value: '+42.0°C' },
@@ -48,6 +64,7 @@ const snapshot: SystemSnapshot = {
 Object.defineProperty(window, 'electronAPI', {
   value: {
     getSystemSnapshot: vi.fn().mockResolvedValue(snapshot),
+    killProcess: vi.fn().mockResolvedValue({ ok: true }),
     storeGet: vi.fn().mockResolvedValue(2000),
     storeSet: vi.fn().mockResolvedValue(undefined),
   },

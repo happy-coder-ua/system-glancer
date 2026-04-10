@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 
-import type { SystemSnapshot } from '@/types/system';
+import type { KillProcessResult, SystemSnapshot } from '@/types/system';
 
 interface ElectronAPI {
   getSystemSnapshot: () => Promise<SystemSnapshot>;
+  killProcess: (pid: number) => Promise<KillProcessResult>;
   storeGet: (key: string) => Promise<unknown>;
   storeSet: (key: string, value: unknown) => Promise<void>;
 }
