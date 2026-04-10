@@ -63,8 +63,8 @@ apps:
     command: opt/system-glancer/system-glancer --no-sandbox --disable-gpu-sandbox
     extensions: [gnome]
     environment:
-      DISABLE_WAYLAND: 1
-      GTK_USE_PORTAL: 0
+      DISABLE_WAYLAND: "1"
+      GTK_USE_PORTAL: "0"
     plugs:
       - home
       - network
