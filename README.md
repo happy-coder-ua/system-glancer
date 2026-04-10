@@ -31,3 +31,11 @@ Ubuntu Glancer is an Electron desktop app inspired by Glances. It shows live CPU
 
 - The app is optimized for Ubuntu and gracefully degrades when optional tools like `sensors` are not installed.
 - Process and disk metrics are collected in the main process and exposed via IPC.
+
+## License
+
+Licensed under Apache-2.0.
+
+- You may use, modify, and redistribute the project.
+- You must preserve the original copyright notice, license text, and NOTICE attribution.
+- Reuse without keeping the original attribution and license terms is not permitted.
