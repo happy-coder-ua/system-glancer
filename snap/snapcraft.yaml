@@ -29,6 +29,9 @@ parts:
       - g++
       - libx11-dev
       - libxkbfile-dev
+    stage-packages:
+      - coreutils
+      - lm-sensors
     override-build: |
       export NPM_CONFIG_LOGLEVEL=error
       export NPM_CONFIG_UPDATE_NOTIFIER=false
@@ -65,6 +68,7 @@ apps:
     environment:
       DISABLE_WAYLAND: "1"
       GTK_USE_PORTAL: "0"
+      PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$PATH
     plugs:
       - home
       - network
