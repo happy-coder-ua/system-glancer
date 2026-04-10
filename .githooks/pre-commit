@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Ensure package.json version is bumped before each commit
+CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null)
+PREVIOUS_VERSION=$(git show HEAD:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null)
+
+if [ -z "$CURRENT_VERSION" ]; then
+  echo "ERROR: Could not read version from package.json"
+  exit 1
+fi
+
+if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════╗"
+  echo "║  VERSION NOT BUMPED!                                    ║"
+  echo "║                                                         ║"
+  echo "║  Current version: $CURRENT_VERSION"
+  echo "║                                                         ║"
+  echo "║  Bump the version in package.json before committing:    ║"
+  echo "║    Patch (bug fix):      x.x.X  (e.g. 1.0.0 → 1.0.1)  ║"
+  echo "║    Minor (new feature):  x.X.0  (e.g. 1.0.1 → 1.1.0)  ║"
+  echo "║    Major (breaking):     X.0.0  (e.g. 1.1.0 → 2.0.0)  ║"
+  echo "╚══════════════════════════════════════════════════════════╝"
+  echo ""
+  exit 1
+fi
+
+# Ensure package.json is staged if version changed
+if ! git diff --cached --name-only | grep -q "^package.json$"; then
+  echo ""
+  echo "ERROR: package.json version changed but file is not staged."
+  echo "Run: git add package.json"
+  echo ""
+  exit 1
+fi

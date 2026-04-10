@@ -1,7 +1,7 @@
 {
   "name": "system-glancer",
   "productName": "System Glancer",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Ubuntu system monitor desktop app inspired by Glances",
   "author": {
     "name": "Serhii Kaminskyi",
@@ -15,6 +15,7 @@
   "main": "dist-electron/main.js",
   "license": "Apache-2.0",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --linux",
     "build:dir": "tsc && vite build && electron-builder --linux dir",
