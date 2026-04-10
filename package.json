@@ -1,0 +1,61 @@
+{
+  "name": "ubuntu-glancer",
+  "productName": "Ubuntu Glancer",
+  "version": "0.1.0",
+  "description": "Ubuntu system monitor desktop app inspired by Glances",
+  "author": {
+    "name": "Serhii Kaminskyi",
+    "email": "serhii.kaminskyi@ukr.net"
+  },
+  "private": true,
+  "main": "dist-electron/main.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder --linux",
+    "build:dir": "tsc && vite build && electron-builder --linux dir",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "build": {
+    "appId": "com.serhiikaminskyi.ubuntu-glancer",
+    "productName": "Ubuntu Glancer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "build/icon.png",
+      "category": "System"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^11.0.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^20.11.30",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3",
+    "vite-plugin-electron": "^1.0.0-beta.2",
+    "vitest": "^3.2.1"
+  }
+}

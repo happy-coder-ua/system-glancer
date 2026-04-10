@@ -1,0 +1,55 @@
+import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
+import type { SystemSnapshot } from '@/types/system';
+
+const snapshot: SystemSnapshot = {
+  hostname: 'ubuntu-box',
+  platform: 'linux x64',
+  kernel: 'Linux 6.8.0',
+  cpu: {
+    model: 'Intel Core i7',
+    cores: 4,
+    overall: 0.32,
+    perCore: [
+      { label: 'CPU 1', usage: 0.25 },
+      { label: 'CPU 2', usage: 0.31 },
+      { label: 'CPU 3', usage: 0.35 },
+      { label: 'CPU 4', usage: 0.37 },
+    ],
+  },
+  memory: {
+    total: 16 * 1024 * 1024 * 1024,
+    used: 6 * 1024 * 1024 * 1024,
+    free: 10 * 1024 * 1024 * 1024,
+    swapTotal: 4 * 1024 * 1024 * 1024,
+    swapUsed: 512 * 1024 * 1024,
+  },
+  load: {
+    one: 0.22,
+    five: 0.44,
+    fifteen: 0.51,
+    uptime: '2d 4h 12m',
+  },
+  disks: [
+    { mount: '/', used: 20, total: 100, usage: 0.2 },
+  ],
+  networks: [
+    { name: 'enp0s31f6', address: '192.168.0.10', family: 'IPv4', internal: false },
+  ],
+  processes: [
+    { pid: 1001, command: 'gnome-shell', cpu: 3.2, memory: 2.1 },
+  ],
+  sensors: [
+    { name: 'Core 0', value: '+42.0°C' },
+  ],
+  timestamp: 1,
+};
+
+Object.defineProperty(window, 'electronAPI', {
+  value: {
+    getSystemSnapshot: vi.fn().mockResolvedValue(snapshot),
+    storeGet: vi.fn().mockResolvedValue(2000),
+    storeSet: vi.fn().mockResolvedValue(undefined),
+  },
+  writable: true,
+});
