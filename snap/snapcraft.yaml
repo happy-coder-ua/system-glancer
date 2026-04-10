@@ -16,7 +16,7 @@ parts:
     plugin: nil
     source: .
     build-snaps:
-      - node/20/stable
+      - node/22/stable
     build-packages:
       - python3
       - make
