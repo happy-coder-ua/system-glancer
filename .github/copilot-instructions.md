@@ -25,3 +25,4 @@
 - Use IPC for all system metric access from the renderer.
 - Prefer reusable dashboard components in atomic design folders.
 - Use Tailwind utility classes and theme variables from `index.css`.
+- Custom application menu via `Menu.buildFromTemplate()` — File, Edit, View, Window, Help (GitHub link + About panel). Do not use the default Electron menu.

@@ -26,7 +26,8 @@ System Glancer is an Electron desktop app inspired by Glances. It shows live CPU
 - Disk usage overview for root and home mounts
 - Network interface summary
 - Top processes by CPU usage
-- Sensor temperature readings when `lm-sensors` is installed
+- Sensor temperature readings via sysfs (`/sys/class/hwmon/`)
+- Custom application menu with File, Edit, View, Window, Help (GitHub link + About panel)
 - Stored refresh interval preference via electron-store
 
 ## Notes
