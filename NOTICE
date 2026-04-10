@@ -1,13 +1,5 @@
-System Glancer
-Copyright 2026 Serhii Kaminskyi
-
-This product is licensed under the Apache License, Version 2.0.
-If you redistribute this project or derivative works, you must preserve:
-- the original copyright notice
-- the Apache-2.0 license text
-- this NOTICE attribution file or an equivalent readable attribution
-
-Project origin:
-Original project: System Glancer
-Original author: Serhii Kaminskyi
-Repository/project source should be credited when redistributed.
+project: System Glancer
+copyright: Copyright 2026 Serhii Kaminskyi
+notice: |
+  This product includes software developed by Serhii Kaminskyi.
+repository: https://github.com/happy-coder-ua/system-glancer

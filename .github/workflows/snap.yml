@@ -1,4 +1,4 @@
-name: Snap Build & Publish
+name: "Snap Build & Publish"
 
 on:
   push:
