@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=System Glancer
+Exec=system-glancer %U
+Icon=${SNAP}/usr/share/icons/hicolor/512x512/apps/system-glancer.png
+Type=Application
+Categories=System;Monitor;
+Comment=Glances-inspired system monitor for Ubuntu
+Terminal=false
+StartupWMClass=system-glancer
