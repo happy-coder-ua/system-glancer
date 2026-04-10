@@ -1,10 +1,16 @@
 name: system-glancer
 base: core22
 version: '1.0.0'
+title: System Glancer
 summary: Glances-inspired system monitor for Ubuntu
 description: |
   Desktop system monitor showing live CPU, memory, disk, network,
   process, and temperature metrics for Ubuntu machines.
+license: Apache-2.0
+contact: serhii.kaminskyi@ukr.net
+issues: https://github.com/happy-coder-ua/system-glancer/issues
+source-code: https://github.com/happy-coder-ua/system-glancer
+website: https://github.com/happy-coder-ua/system-glancer
 grade: stable
 confinement: strict
 
