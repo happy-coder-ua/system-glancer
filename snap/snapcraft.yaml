@@ -1,6 +1,6 @@
 name: system-glancer
 base: core22
-version: '1.0.8'
+version: '1.0.9'
 title: System Glancer
 summary: Glances-inspired system monitor for Ubuntu
 description: |
@@ -43,7 +43,7 @@ parts:
       export NPM_CONFIG_UPDATE_NOTIFIER=false
       export NPM_CONFIG_FUND=false
       export NPM_CONFIG_AUDIT=false
-      npm ci
+      npm install --ignore-scripts
 
       # Build frontend and electron code (skip electron-builder — npm ls broken in snap)
       npx tsc
