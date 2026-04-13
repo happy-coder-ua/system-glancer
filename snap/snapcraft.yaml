@@ -1,6 +1,6 @@
 name: system-glancer
 base: core22
-version: '1.0.9'
+adopt-info: system-glancer
 title: System Glancer
 summary: Glances-inspired system monitor for Ubuntu
 description: |
@@ -39,6 +39,7 @@ parts:
     stage-packages:
       - coreutils
     override-build: |
+      craftctl set version=$(node -p "require('./package.json').version")
       export NPM_CONFIG_LOGLEVEL=error
       export NPM_CONFIG_UPDATE_NOTIFIER=false
       export NPM_CONFIG_FUND=false
