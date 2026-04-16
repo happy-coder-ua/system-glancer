@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, statfs } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import Store from 'electron-store';
 
@@ -168,44 +168,60 @@ async function getDiskInfo(): Promise<DiskSnapshot[]> {
       'tracefs',
     ]);
 
-    const { stdout } = await execFileAsync('df', ['-kPT']);
     const seenMounts = new Set<string>();
 
-    return stdout
+    const mounts = await readFile('/proc/mounts', 'utf-8');
+
+    const disks = await Promise.all(mounts
       .split('\n')
-      .slice(1)
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => line.split(/\s+/))
-      .map((parts) => {
+      .map(async (parts) => {
         const filesystem = parts[0] ?? '';
-        const type = parts[1] ?? '';
-        const total = Number(parts[2]) * 1024;
-        const used = Number(parts[3]) * 1024;
-        const mount = parts[6] ?? parts[parts.length - 1] ?? '/';
+        const mount = parts[1] ?? '/';
+        const type = parts[2] ?? '';
 
-        return {
-          filesystem,
-          type,
-          mount,
-          used,
-          total,
-          usage: total > 0 ? used / total : 0,
-        };
-      })
-      .filter((disk) => !ignoredTypes.has(disk.type))
-      .filter((disk) => !disk.mount.startsWith('/snap/'))
-      .filter((disk) => !disk.mount.startsWith('/proc/'))
-      .filter((disk) => !disk.mount.startsWith('/sys/'))
-      .filter((disk) => !disk.mount.startsWith('/dev/'))
-      .filter((disk) => disk.total > 0)
-      .filter((disk) => {
-        if (seenMounts.has(disk.mount)) {
-          return false;
+        if (ignoredTypes.has(type)) {
+          return null;
         }
-        seenMounts.add(disk.mount);
-        return true;
-      })
+
+        if (mount.startsWith('/snap/') || mount.startsWith('/proc/') || mount.startsWith('/sys/') || mount.startsWith('/dev/')) {
+          return null;
+        }
+
+        if (seenMounts.has(mount)) {
+          return null;
+        }
+
+        seenMounts.add(mount);
+
+        try {
+          const stats = await statfs(mount);
+          const blockSize = stats.bsize;
+          const total = stats.blocks * blockSize;
+          const free = stats.bavail * blockSize;
+          const used = Math.max(0, total - free);
+
+          if (total <= 0) {
+            return null;
+          }
+
+          return {
+            filesystem,
+            type,
+            mount,
+            used,
+            total,
+            usage: used / total,
+          };
+        } catch {
+          return null;
+        }
+      }));
+
+    return disks
+      .filter((disk): disk is { filesystem: string; type: string; mount: string; used: number; total: number; usage: number } => disk !== null)
       .map(({ mount, used, total, usage }) => ({
         mount,
         used,

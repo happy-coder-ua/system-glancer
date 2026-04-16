@@ -6,11 +6,7 @@ System Glancer is an Electron desktop app inspired by Glances. It shows live CPU
 
 ## Install from Snap Store
 
-<p>
-	<a href="https://snapcraft.io/system-glancer">
-		<img alt="Get it from the Snap Store" src="https://img.shields.io/badge/Snap%20Store-system--glancer-E95420?logo=snapcraft&logoColor=white">
-	</a>
-</p>
+[![system-glancer](https://snapcraft.io/system-glancer/badge.svg)](https://snapcraft.io/system-glancer)
 
 ```bash
 sudo snap install system-glancer
@@ -25,6 +21,14 @@ sudo snap connect system-glancer:system-observe
 sudo snap connect system-glancer:process-control
 sudo snap connect system-glancer:network-observe
 ```
+
+## Support
+
+<p>
+	<a href="https://ko-fi.com/happy_coder_ua">
+		<img alt="Support on Ko-fi" src="https://img.shields.io/badge/Ko--fi-happy__coder__ua-FF5E5B?logo=kofi&logoColor=white">
+	</a>
+</p>
 
 ## Stack
 

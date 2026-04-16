@@ -14,10 +14,11 @@ description: |
     sudo snap connect system-glancer:process-control
     sudo snap connect system-glancer:network-observe
 license: Apache-2.0
-contact: serhii.kaminskyi@ukr.net
+contact: https://sekam.com.ua/contacts
 issues: https://github.com/happy-coder-ua/system-glancer/issues
+donation: https://ko-fi.com/happy_coder_ua
 source-code: https://github.com/happy-coder-ua/system-glancer
-website: https://github.com/happy-coder-ua/system-glancer
+website: https://sekam.com.ua/p/system-glancer
 grade: stable
 confinement: strict
 
@@ -28,6 +29,8 @@ parts:
   system-glancer:
     plugin: nil
     source: .
+    parse-info:
+      - snap/local/system-glancer.metainfo.xml
     build-snaps:
       - node/22/stable
     build-packages:
@@ -36,8 +39,6 @@ parts:
       - g++
       - libx11-dev
       - libxkbfile-dev
-    stage-packages:
-      - coreutils
     override-build: |
       craftctl set version=$(node -p "require('./package.json').version")
       export NPM_CONFIG_LOGLEVEL=error
@@ -54,9 +55,12 @@ parts:
       ELECTRON_DIST="node_modules/electron/dist"
       APP_DIR="release/linux-unpacked"
 
+      rm -rf "$APP_DIR"
       mkdir -p "$APP_DIR/resources/app"
       cp -r "$ELECTRON_DIST"/. "$APP_DIR"/
       mv "$APP_DIR/electron" "$APP_DIR/system-glancer"
+      rm -f "$APP_DIR/resources/app.asar"
+      rm -rf "$APP_DIR/resources/default_app.asar"
 
       cp package.json "$APP_DIR/resources/app/"
       cp -r dist "$APP_DIR/resources/app/"
@@ -66,7 +70,9 @@ parts:
       cp -r release/linux-unpacked/. $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/metainfo
       cp build/icon.png $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/system-glancer.png
+      cp snap/local/system-glancer.metainfo.xml $SNAPCRAFT_PART_INSTALL/usr/share/metainfo/system-glancer.metainfo.xml
 
 apps:
   system-glancer:

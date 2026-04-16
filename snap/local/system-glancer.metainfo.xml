@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>system-glancer.desktop</id>
+  <name>System Glancer</name>
+  <summary>Glances-inspired system monitor for Ubuntu</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <developer id="kmuanic">
+    <name>Serhii Kaminskyi</name>
+  </developer>
+
+  <launchable type="desktop-id">system-glancer.desktop</launchable>
+
+  <description>
+    <p>
+      Desktop system monitor showing live CPU, memory, disk, network, process,
+      and temperature metrics for Ubuntu machines.
+    </p>
+    <p>
+      After installation, grant required permissions with snap connect for the
+      observe interfaces and process-control.
+    </p>
+  </description>
+
+  <url type="homepage">https://sekam.com.ua/p/system-glancer</url>
+  <url type="contact">https://sekam.com.ua/contacts</url>
+  <url type="bugtracker">https://github.com/happy-coder-ua/system-glancer/issues</url>
+  <url type="donation">https://ko-fi.com/happy_coder_ua</url>
+  <url type="vcs-browser">https://github.com/happy-coder-ua/system-glancer</url>
+
+  <releases>
+    <release version="1.0.11" date="2026-04-16">
+      <description>
+        <p>Updated project metadata and support links.</p>
+        <ul>
+          <li>Added Ko-fi funding links for Snap metadata and GitHub funding</li>
+          <li>Pointed Snap website and contact metadata to the published project pages</li>
+          <li>Added repository support links for GitHub visitors</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.10" date="2026-04-16">
+      <description>
+        <p>Snap packaging and runtime metadata fixes.</p>
+        <ul>
+          <li>Removed stale app bundle files from the snap payload</li>
+          <li>Aligned embedded app version with the packaged snap version</li>
+          <li>Reworked disk metrics collection to avoid the df/coreutils runtime dependency</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.0.9" date="2026-04-12">
+      <description>
+        <p>Published the stable snap release.</p>
+      </description>
+    </release>
+    <release version="1.0.8" date="2026-04-12">
+      <description>
+        <p>Improved snap build reliability and metadata handling.</p>
+      </description>
+    </release>
+  </releases>
+</component>
