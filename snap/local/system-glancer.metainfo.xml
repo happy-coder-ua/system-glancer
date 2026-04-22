@@ -30,6 +30,14 @@
   <url type="vcs-browser">https://github.com/happy-coder-ua/system-glancer</url>
 
   <releases>
+    <release version="1.0.13" date="2026-04-22">
+      <description>
+        <p>Follow-up packaging sync for the 1.0.12 dashboard update.</p>
+        <ul>
+          <li>Synchronized npm lockfile metadata with the packaged application version</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.12" date="2026-04-22">
       <description>
         <p>Improved Linux hardware visibility and dashboard layout.</p>
