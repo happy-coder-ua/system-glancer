@@ -14,8 +14,8 @@
 
   <description>
     <p>
-      Desktop system monitor showing live CPU, memory, disk, network, process,
-      and temperature metrics for Ubuntu machines.
+      Desktop system monitor showing live CPU, memory, mounted physical disk,
+      network, process, and temperature metrics for Ubuntu machines.
     </p>
     <p>
       After installation, grant required permissions with snap connect for the
@@ -30,6 +30,16 @@
   <url type="vcs-browser">https://github.com/happy-coder-ua/system-glancer</url>
 
   <releases>
+    <release version="1.0.12" date="2026-04-22">
+      <description>
+        <p>Improved Linux hardware visibility and dashboard layout.</p>
+        <ul>
+          <li>Restricted disk usage cards to mounted physical devices with vendor and model labels</li>
+          <li>Grouped IPv4 and IPv6 addresses per physical network interface and added subnet mask plus gateway details</li>
+          <li>Updated the sensors grid to keep two readings per row on larger dashboard layouts</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.11" date="2026-04-16">
       <description>
         <p>Updated project metadata and support links.</p>

@@ -1,6 +1,6 @@
 # System Glancer
 
-System Glancer is an Electron desktop app inspired by Glances. It shows live CPU, memory, disk, network, process, and temperature metrics for Ubuntu machines.
+System Glancer is an Electron desktop app inspired by Glances. It shows live CPU, memory, mounted physical disk, network, process, and temperature metrics for Ubuntu machines.
 
 ![System Glancer](build/promo.png)
 
@@ -49,12 +49,18 @@ sudo snap connect system-glancer:network-observe
 ## Features
 
 - Live CPU, memory, swap, and load averages
-- Disk usage overview for root and home mounts
-- Network interface summary
+- Disk usage overview for mounted physical devices with vendor and model labels
+- Network summary for physical interfaces and localhost with merged IPv4 and IPv6 addresses, subnet masks, and gateways
 - Top processes by CPU usage
-- Sensor temperature readings via sysfs (`/sys/class/hwmon/`)
+- Sensor temperature readings via sysfs (`/sys/class/hwmon/`) in a two-column dashboard grid
 - Custom application menu with File, Edit, View, Window, Help (GitHub link + About panel)
 - Stored refresh interval preference via electron-store
+
+## Snap Notes
+
+- The Snap package ships AppStream metadata from `snap/local/system-glancer.metainfo.xml`.
+- The dashboard relies on `hardware-observe`, `mount-observe`, `system-observe`, `process-control`, and `network-observe` for full Linux telemetry.
+- Network gateway and subnet details are collected from `ip -j addr show` and `ip -j route show` inside the sandbox.
 
 ## Versioning
 

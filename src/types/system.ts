@@ -26,6 +26,9 @@ export interface LoadSnapshot {
 }
 
 export interface DiskSnapshot {
+  device: string;
+  deviceLabel: string;
+  deviceDetails?: string;
   mount: string;
   used: number;
   total: number;
@@ -34,9 +37,9 @@ export interface DiskSnapshot {
 
 export interface NetworkSnapshot {
   name: string;
-  address: string;
-  family: string;
-  internal: boolean;
+  addresses: string[];
+  subnetMasks: string[];
+  gateways: string[];
   rxBytesPerSecond: number;
   txBytesPerSecond: number;
 }

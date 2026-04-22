@@ -13,9 +13,11 @@ export function ResourceTablePanel({ disks, networks }: ResourceTablePanelProps)
       <Panel title="Disks" subtitle="Mounted filesystem usage">
         <div className="space-y-3">
           {disks.map((disk) => (
-            <div key={disk.mount} className="flex items-center justify-between rounded-[12px] border border-[var(--gl-border-soft)] bg-[var(--gl-panel-soft)] px-4 py-3">
+            <div key={`${disk.device}-${disk.mount}`} className="flex items-center justify-between rounded-[12px] border border-[var(--gl-border-soft)] bg-[var(--gl-panel-soft)] px-4 py-3">
               <div>
-                <div className="text-sm font-semibold text-[var(--gl-text)]">{disk.mount}</div>
+                <div className="text-sm font-semibold text-[var(--gl-text)]">{disk.deviceLabel}</div>
+                {disk.deviceDetails ? <div className="text-xs text-[var(--gl-text-dim)]">{disk.deviceDetails}</div> : null}
+                <div className="text-xs text-[var(--gl-text-dim)]">{disk.mount}</div>
                 <div className="text-xs text-[var(--gl-text-muted)]">{formatBytes(disk.used)} / {formatBytes(disk.total)}</div>
               </div>
               <div className="text-sm font-semibold text-[var(--gl-accent)]">{formatPercent(disk.usage)}</div>
@@ -27,12 +29,13 @@ export function ResourceTablePanel({ disks, networks }: ResourceTablePanelProps)
       <Panel title="Network" subtitle="Detected interfaces">
         <div className="space-y-3">
           {networks.map((network) => (
-            <div key={`${network.name}-${network.address}`} className="rounded-[12px] border border-[var(--gl-border-soft)] bg-[var(--gl-panel-soft)] px-4 py-3">
+            <div key={network.name} className="rounded-[12px] border border-[var(--gl-border-soft)] bg-[var(--gl-panel-soft)] px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-[var(--gl-text)]">{network.name}</span>
-                <span className="text-xs uppercase tracking-[0.2em] text-[var(--gl-text-dim)]">{network.family}</span>
               </div>
-              <div className="mt-1 text-sm text-[var(--gl-text-muted)]">{network.address}</div>
+              <div className="mt-1 text-sm text-[var(--gl-text-muted)]">{network.addresses.join(' • ')}</div>
+              {network.subnetMasks.length > 0 ? <div className="mt-1 text-xs text-[var(--gl-text-dim)]">Mask {network.subnetMasks.join(' • ')}</div> : null}
+              {network.gateways.length > 0 ? <div className="mt-1 text-xs text-[var(--gl-text-dim)]">Gateway {network.gateways.join(' • ')}</div> : null}
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[var(--gl-text-muted)]">
                 <div>RX {formatRatePerSecond(network.rxBytesPerSecond)}</div>
                 <div>TX {formatRatePerSecond(network.txBytesPerSecond)}</div>

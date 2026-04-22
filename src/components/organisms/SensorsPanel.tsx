@@ -102,7 +102,7 @@ function getSensorTone(temperature: number): 'green' | 'blue' | 'amber' | 'red' 
 export function SensorsPanel({ sensors }: SensorsPanelProps): ReactElement {
   return (
     <Panel title="Sensors" subtitle="Temperature readings">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {sensors.length > 0 ? sensors.map((sensor) => {
           const details = parseSensorDetails(sensor.value);
           const temperature = details.current;

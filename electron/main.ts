@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { readFile, readdir, statfs } from 'node:fs/promises';
+import { access, readFile, readdir, statfs } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import Store from 'electron-store';
 
@@ -16,19 +16,58 @@ interface CpuTimesSnapshot {
 }
 
 interface DiskSnapshot {
+  device: string;
+  deviceLabel: string;
+  deviceDetails?: string;
   mount: string;
   used: number;
   total: number;
   usage: number;
 }
 
+interface BlockDeviceSnapshot {
+  name?: string;
+  path?: string;
+  type?: string;
+  mountpoints?: Array<string | null> | string | null;
+  vendor?: string | null;
+  model?: string | null;
+  serial?: string | null;
+  rev?: string | null;
+  children?: BlockDeviceSnapshot[];
+}
+
+interface MountedDeviceCandidate {
+  device: string;
+  deviceLabel: string;
+  deviceDetails?: string;
+  mount: string;
+}
+
 interface NetworkSnapshot {
   name: string;
-  address: string;
-  family: string;
-  internal: boolean;
+  addresses: string[];
+  subnetMasks: string[];
+  gateways: string[];
   rxBytesPerSecond: number;
   txBytesPerSecond: number;
+}
+
+interface IpAddressEntry {
+  family?: string;
+  local?: string;
+  prefixlen?: number;
+}
+
+interface IpInterfaceEntry {
+  ifname?: string;
+  addr_info?: IpAddressEntry[];
+}
+
+interface IpRouteEntry {
+  dst?: string;
+  gateway?: string;
+  dev?: string;
 }
 
 interface ProcessSnapshot {
@@ -143,92 +182,333 @@ async function getSwapInfo(): Promise<{ total: number; used: number }> {
   }
 }
 
-async function getDiskInfo(): Promise<DiskSnapshot[]> {
+function normalizeMountPoints(mountpoints: BlockDeviceSnapshot['mountpoints']): string[] {
+  if (Array.isArray(mountpoints)) {
+    return mountpoints.filter((mount): mount is string => typeof mount === 'string' && mount.length > 0);
+  }
+
+  return typeof mountpoints === 'string' && mountpoints.length > 0
+    ? [mountpoints]
+    : [];
+}
+
+function compareMountPriority(left: string, right: string): number {
+  if (left === '/') {
+    return -1;
+  }
+
+  if (right === '/') {
+    return 1;
+  }
+
+  if (left.length !== right.length) {
+    return left.length - right.length;
+  }
+
+  return left.localeCompare(right);
+}
+
+function normalizeBlockText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim().replace(/\s+/g, ' ');
+  return normalized.length > 0 ? normalized : null;
+}
+
+function formatDeviceLabel(device: Pick<BlockDeviceSnapshot, 'name' | 'path' | 'vendor' | 'model'>): string {
+  const vendor = normalizeBlockText(device.vendor);
+  const model = normalizeBlockText(device.model);
+
+  if (vendor && model) {
+    return model.toLowerCase().startsWith(vendor.toLowerCase())
+      ? model
+      : `${vendor} ${model}`;
+  }
+
+  if (model) {
+    return model;
+  }
+
+  if (vendor) {
+    return vendor;
+  }
+
+  return device.path ?? device.name ?? 'Unknown disk';
+}
+
+function formatDeviceDetails(device: Pick<BlockDeviceSnapshot, 'path' | 'rev'>): string | undefined {
+  const revision = normalizeBlockText(device.rev);
+  const details = [
+    revision ? `FW ${revision}` : null,
+    device.path ?? null,
+  ].filter((value): value is string => value !== null);
+
+  return details.length > 0 ? details.join(' • ') : undefined;
+}
+
+function ipv4PrefixToMask(prefixLength: number): string {
+  const clampedPrefix = Math.max(0, Math.min(32, prefixLength));
+  const octets = Array.from({ length: 4 }, (_, index) => {
+    const remainingBits = Math.max(0, clampedPrefix - index * 8);
+    if (remainingBits >= 8) {
+      return 255;
+    }
+
+    if (remainingBits <= 0) {
+      return 0;
+    }
+
+    return 256 - 2 ** (8 - remainingBits);
+  });
+
+  return octets.join('.');
+}
+
+function formatSubnetMask(address: IpAddressEntry): string | null {
+  const prefixLength = address.prefixlen;
+  if (typeof prefixLength !== 'number') {
+    return null;
+  }
+
+  if (address.family === 'inet') {
+    return ipv4PrefixToMask(prefixLength);
+  }
+
+  if (address.family === 'inet6') {
+    return `/${prefixLength}`;
+  }
+
+  return null;
+}
+
+async function getLinuxNetworkMetadata(): Promise<{
+  addressesByInterface: Map<string, { addresses: string[]; subnetMasks: string[] }>;
+  gatewaysByInterface: Map<string, string[]>;
+}> {
   try {
-    const ignoredTypes = new Set([
-      'autofs',
-      'bpf',
-      'configfs',
-      'cgroup',
-      'cgroup2',
-      'debugfs',
-      'devpts',
-      'devtmpfs',
-      'efivarfs',
-      'fusectl',
-      'hugetlbfs',
-      'mqueue',
-      'proc',
-      'pstore',
-      'rpc_pipefs',
-      'securityfs',
-      'squashfs',
-      'sysfs',
-      'tmpfs',
-      'tracefs',
+    const [{ stdout: addrStdout }, { stdout: routeStdout }, { stdout: route6Stdout }] = await Promise.all([
+      execFileAsync('ip', ['-j', 'addr', 'show']),
+      execFileAsync('ip', ['-j', 'route', 'show', 'table', 'main']),
+      execFileAsync('ip', ['-j', '-6', 'route', 'show', 'table', 'main']),
     ]);
 
-    const seenMounts = new Set<string>();
+    const addrEntries = JSON.parse(addrStdout) as IpInterfaceEntry[];
+    const routeEntries = [
+      ...(JSON.parse(routeStdout) as IpRouteEntry[]),
+      ...(JSON.parse(route6Stdout) as IpRouteEntry[]),
+    ];
 
-    const mounts = await readFile('/proc/mounts', 'utf-8');
+    const addressesByInterface = new Map<string, { addresses: string[]; subnetMasks: string[] }>();
+    for (const entry of addrEntries) {
+      const name = entry.ifname;
+      if (!name) {
+        continue;
+      }
 
-    const disks = await Promise.all(mounts
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => line.split(/\s+/))
-      .map(async (parts) => {
-        const filesystem = parts[0] ?? '';
-        const mount = parts[1] ?? '/';
-        const type = parts[2] ?? '';
+      const normalizedAddresses = (entry.addr_info ?? [])
+        .filter((address): address is Required<Pick<IpAddressEntry, 'local'>> & IpAddressEntry => typeof address.local === 'string' && address.local.length > 0)
+        .map((address) => ({
+          address: address.local,
+          subnetMask: formatSubnetMask(address),
+        }));
 
-        if (ignoredTypes.has(type)) {
-          return null;
-        }
+      addressesByInterface.set(name, {
+        addresses: normalizedAddresses.map((address) => address.address),
+        subnetMasks: normalizedAddresses
+          .map((address) => address.subnetMask)
+          .filter((mask): mask is string => typeof mask === 'string')
+          .filter((mask, index, masks) => masks.indexOf(mask) === index),
+      });
+    }
 
-        if (mount.startsWith('/snap/') || mount.startsWith('/proc/') || mount.startsWith('/sys/') || mount.startsWith('/dev/')) {
-          return null;
-        }
+    const gatewaysByInterface = new Map<string, string[]>();
+    for (const route of routeEntries) {
+      if (!route.dev || !route.gateway || route.dst !== 'default') {
+        continue;
+      }
 
-        if (seenMounts.has(mount)) {
-          return null;
-        }
+      const gateways = gatewaysByInterface.get(route.dev) ?? [];
+      if (!gateways.includes(route.gateway)) {
+        gateways.push(route.gateway);
+      }
+      gatewaysByInterface.set(route.dev, gateways);
+    }
 
-        seenMounts.add(mount);
+    return { addressesByInterface, gatewaysByInterface };
+  } catch {
+    return {
+      addressesByInterface: new Map<string, { addresses: string[]; subnetMasks: string[] }>(),
+      gatewaysByInterface: new Map<string, string[]>(),
+    };
+  }
+}
 
-        try {
-          const stats = await statfs(mount);
-          const blockSize = stats.bsize;
-          const total = stats.blocks * blockSize;
-          const free = stats.bavail * blockSize;
-          const used = Math.max(0, total - free);
+function selectPrimaryMounts(candidates: MountedDeviceCandidate[]): MountedDeviceCandidate[] {
+  const mountsByDevice = new Map<string, MountedDeviceCandidate>();
 
-          if (total <= 0) {
-            return null;
-          }
+  for (const candidate of candidates) {
+    const existingMount = mountsByDevice.get(candidate.device);
+    if (!existingMount || compareMountPriority(candidate.mount, existingMount.mount) < 0) {
+      mountsByDevice.set(candidate.device, candidate);
+    }
+  }
 
-          return {
-            filesystem,
-            type,
-            mount,
-            used,
-            total,
-            usage: used / total,
-          };
-        } catch {
-          return null;
-        }
-      }));
+  return [...mountsByDevice.values()];
+}
 
-    return disks
-      .filter((disk): disk is { filesystem: string; type: string; mount: string; used: number; total: number; usage: number } => disk !== null)
-      .map(({ mount, used, total, usage }) => ({
+function collectMountedPhysicalMounts(
+  devices: BlockDeviceSnapshot[],
+  hasPhysicalDiskAncestor = false,
+  physicalDisk: BlockDeviceSnapshot | null = null,
+): MountedDeviceCandidate[] {
+  return devices.flatMap((device) => {
+    const type = device.type ?? '';
+    const hasPhysicalBacking = hasPhysicalDiskAncestor || type === 'disk';
+    const sourceDisk = type === 'disk' ? device : physicalDisk;
+    const mounts = hasPhysicalBacking && type !== 'loop' && type !== 'rom' && type !== 'zram'
+      ? normalizeMountPoints(device.mountpoints).map((mount) => ({
+        device: device.path ?? device.name ?? mount,
+        deviceLabel: formatDeviceLabel(sourceDisk ?? device),
+        deviceDetails: formatDeviceDetails(sourceDisk ?? device),
+        mount,
+      }))
+      : [];
+    const childMounts = collectMountedPhysicalMounts(device.children ?? [], hasPhysicalBacking, sourceDisk);
+
+    return [...mounts, ...childMounts];
+  });
+}
+
+async function getDiskUsageFromMounts(mounts: MountedDeviceCandidate[]): Promise<DiskSnapshot[]> {
+  const seenMounts = new Set<string>();
+  const disks = await Promise.all(mounts.map(async ({ device, deviceLabel, deviceDetails, mount }) => {
+    if (seenMounts.has(mount)) {
+      return null;
+    }
+
+    seenMounts.add(mount);
+
+    try {
+      const stats = await statfs(mount);
+      const blockSize = stats.bsize;
+      const total = stats.blocks * blockSize;
+      const free = stats.bavail * blockSize;
+      const used = Math.max(0, total - free);
+
+      if (total <= 0) {
+        return null;
+      }
+
+      return {
+        device,
+        deviceLabel,
+        deviceDetails,
         mount,
         used,
         total,
-        usage,
-      }))
-      .sort((left, right) => left.mount.localeCompare(right.mount));
+        usage: used / total,
+      };
+    } catch {
+      return null;
+    }
+  }));
+
+  return disks
+    .filter((disk): disk is DiskSnapshot => disk !== null)
+    .sort((left, right) => left.device.localeCompare(right.device) || left.mount.localeCompare(right.mount));
+}
+
+async function getPhysicalDiskInfo(): Promise<DiskSnapshot[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-J', '-o', 'NAME,PATH,TYPE,MOUNTPOINTS,VENDOR,MODEL,SERIAL,REV']);
+    const parsed = JSON.parse(stdout) as { blockdevices?: BlockDeviceSnapshot[] };
+    const physicalMounts = selectPrimaryMounts(collectMountedPhysicalMounts(parsed.blockdevices ?? []));
+
+    if (physicalMounts.length === 0) {
+      return [];
+    }
+
+    return getDiskUsageFromMounts(physicalMounts);
+  } catch {
+    return [];
+  }
+}
+
+async function getDiskInfoFromProcMounts(): Promise<DiskSnapshot[]> {
+  const ignoredTypes = new Set([
+    'autofs',
+    'bpf',
+    'configfs',
+    'cgroup',
+    'cgroup2',
+    'debugfs',
+    'devpts',
+    'devtmpfs',
+    'efivarfs',
+    'fusectl',
+    'hugetlbfs',
+    'mqueue',
+    'proc',
+    'pstore',
+    'rpc_pipefs',
+    'securityfs',
+    'squashfs',
+    'sysfs',
+    'tmpfs',
+    'tracefs',
+  ]);
+
+  const mounts = await readFile('/proc/mounts', 'utf-8');
+
+  const physicalMounts = selectPrimaryMounts(mounts
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.split(/\s+/))
+    .filter((parts) => {
+      const filesystem = parts[0] ?? '';
+      const mount = parts[1] ?? '/';
+      const type = parts[2] ?? '';
+
+      if (ignoredTypes.has(type)) {
+        return false;
+      }
+
+      if (!filesystem.startsWith('/dev/')) {
+        return false;
+      }
+
+      if (filesystem.startsWith('/dev/loop') || filesystem.startsWith('/dev/zram')) {
+        return false;
+      }
+
+      if (mount.startsWith('/snap/') || mount.startsWith('/proc/') || mount.startsWith('/sys/') || mount.startsWith('/dev/')) {
+        return false;
+      }
+
+      return true;
+    })
+    .map((parts) => ({
+      device: parts[0] ?? '',
+      deviceLabel: parts[0] ?? '',
+      deviceDetails: undefined,
+      mount: parts[1] ?? '/',
+    })));
+
+  return getDiskUsageFromMounts(physicalMounts);
+}
+
+async function getDiskInfo(): Promise<DiskSnapshot[]> {
+  try {
+    const physicalDisks = await getPhysicalDiskInfo();
+
+    if (physicalDisks.length > 0) {
+      return physicalDisks;
+    }
+
+    return getDiskInfoFromProcMounts();
   } catch {
     return [];
   }
@@ -236,9 +516,27 @@ async function getDiskInfo(): Promise<DiskSnapshot[]> {
 
 async function getNetworkInfo(): Promise<NetworkSnapshot[]> {
   const interfaces = os.networkInterfaces();
-  const visibleInterfaces = Object.entries(interfaces)
-    .flatMap(([name, entries]) => (entries ?? []).map((entry) => ({ name, entry })))
-    .filter(({ entry }) => !entry.internal);
+  const isPhysicalInterface = async (name: string): Promise<boolean> => {
+    if (name === 'lo') {
+      return true;
+    }
+
+    try {
+      await access(`/sys/class/net/${name}/device`);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const interfaceEntries = await Promise.all(Object.entries(interfaces).map(async ([name, entries]) => ({
+    name,
+    entries: entries ?? [],
+    isVisible: await isPhysicalInterface(name),
+  })));
+
+  const visibleInterfaces = interfaceEntries.filter(({ isVisible }) => isVisible);
+  const { addressesByInterface, gatewaysByInterface } = await getLinuxNetworkMetadata();
 
   let counters: Record<string, { rxBytes: number; txBytes: number }> = {};
   try {
@@ -269,18 +567,60 @@ async function getNetworkInfo(): Promise<NetworkSnapshot[]> {
   const elapsedSeconds = previousNetworkTimestamp ? Math.max((now - previousNetworkTimestamp) / 1000, 0.001) : null;
 
   const snapshots = visibleInterfaces
-    .map(({ name, entry }) => ({
+    .map(({ name, entries }) => ({
       name,
-      address: entry.address,
-      family: entry.family,
-      internal: entry.internal,
+      addresses: (addressesByInterface.get(name)?.addresses ?? entries
+        .map((entry) => entry.address))
+        .filter((address, index, addresses) => address.length > 0 && addresses.indexOf(address) === index)
+        .sort((left, right) => {
+          if (left === '127.0.0.1') {
+            return -1;
+          }
+
+          if (right === '127.0.0.1') {
+            return 1;
+          }
+
+          if (left === '::1') {
+            return right === '127.0.0.1' ? 1 : -1;
+          }
+
+          if (right === '::1') {
+            return left === '127.0.0.1' ? -1 : 1;
+          }
+
+          const leftIsIpv4 = !left.includes(':');
+          const rightIsIpv4 = !right.includes(':');
+
+          if (leftIsIpv4 !== rightIsIpv4) {
+            return leftIsIpv4 ? -1 : 1;
+          }
+
+          return left.localeCompare(right);
+        }),
+      subnetMasks: (addressesByInterface.get(name)?.subnetMasks ?? [])
+        .filter((mask, index, masks) => mask.length > 0 && masks.indexOf(mask) === index),
+      gateways: (gatewaysByInterface.get(name) ?? [])
+        .filter((gateway, index, gateways) => gateway.length > 0 && gateways.indexOf(gateway) === index),
       rxBytesPerSecond: elapsedSeconds && previousNetworkStats?.[name]
         ? Math.max(0, (counters[name]?.rxBytes ?? 0) - previousNetworkStats[name].rxBytes) / elapsedSeconds
         : 0,
       txBytesPerSecond: elapsedSeconds && previousNetworkStats?.[name]
         ? Math.max(0, (counters[name]?.txBytes ?? 0) - previousNetworkStats[name].txBytes) / elapsedSeconds
         : 0,
-    }));
+    }))
+    .filter((network) => network.addresses.length > 0)
+    .sort((left, right) => {
+      if (left.name === 'lo') {
+        return 1;
+      }
+
+      if (right.name === 'lo') {
+        return -1;
+      }
+
+      return left.name.localeCompare(right.name);
+    });
 
   previousNetworkStats = counters;
   previousNetworkTimestamp = now;

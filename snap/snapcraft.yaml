@@ -4,8 +4,12 @@ adopt-info: system-glancer
 title: System Glancer
 summary: Glances-inspired system monitor for Ubuntu
 description: |
-  Desktop system monitor showing live CPU, memory, disk, network,
-  process, and temperature metrics for Ubuntu machines.
+  Desktop system monitor showing live CPU, memory, mounted physical disk,
+  network, process, and temperature metrics for Ubuntu machines.
+
+  The dashboard highlights labeled storage devices, physical network
+  interfaces with merged IP addresses, subnet masks, gateways, and a
+  two-column temperature sensor grid.
 
   After installation, grant required permissions:
     sudo snap connect system-glancer:hardware-observe

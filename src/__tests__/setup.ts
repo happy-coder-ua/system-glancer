@@ -31,16 +31,32 @@ const snapshot: SystemSnapshot = {
     uptime: '2d 4h 12m',
   },
   disks: [
-    { mount: '/', used: 20, total: 100, usage: 0.2 },
+    {
+      device: '/dev/nvme0n1p2',
+      deviceLabel: 'SAMSUNG MZALQ512HBLU-00BL2',
+      deviceDetails: 'FW 5L2QFXM7 • /dev/nvme0n1p2',
+      mount: '/',
+      used: 20,
+      total: 100,
+      usage: 0.2,
+    },
   ],
   networks: [
     {
       name: 'enp0s31f6',
-      address: '192.168.0.10',
-      family: 'IPv4',
-      internal: false,
+      addresses: ['192.168.0.10', 'fe80::1234'],
+      subnetMasks: ['255.255.255.0', '/64'],
+      gateways: ['192.168.0.1'],
       rxBytesPerSecond: 2048,
       txBytesPerSecond: 1024,
+    },
+    {
+      name: 'lo',
+      addresses: ['127.0.0.1', '::1'],
+      subnetMasks: ['255.0.0.0', '/128'],
+      gateways: [],
+      rxBytesPerSecond: 128,
+      txBytesPerSecond: 128,
     },
   ],
   processes: [
