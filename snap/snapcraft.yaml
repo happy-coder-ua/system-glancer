@@ -72,6 +72,9 @@ parts:
 
       mkdir -p $SNAPCRAFT_PART_INSTALL/opt/system-glancer
       cp -r release/linux-unpacked/. $SNAPCRAFT_PART_INSTALL/opt/system-glancer/
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp snap/local/launch-system-glancer.sh $SNAPCRAFT_PART_INSTALL/bin/launch-system-glancer
+      chmod 755 $SNAPCRAFT_PART_INSTALL/bin/launch-system-glancer
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/metainfo
@@ -80,7 +83,7 @@ parts:
 
 apps:
   system-glancer:
-    command: opt/system-glancer/system-glancer --no-sandbox --disable-gpu-sandbox
+    command: bin/launch-system-glancer
     extensions: [gnome]
     environment:
       DISABLE_WAYLAND: "1"

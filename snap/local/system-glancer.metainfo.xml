@@ -30,6 +30,16 @@
   <url type="vcs-browser">https://github.com/happy-coder-ua/system-glancer</url>
 
   <releases>
+    <release version="1.0.14" date="2026-04-24">
+      <description>
+        <p>Stabilized Linux startup across development, packaged, and snap builds.</p>
+        <ul>
+          <li>Forced X11 startup for the Vite development launcher before Chromium initializes</li>
+          <li>Wrapped packaged Linux binaries so AppImage and deb builds avoid stale Wayland environment crashes</li>
+          <li>Switched the snap package to a dedicated launcher script for reliable X11 startup under the GNOME command chain</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.13" date="2026-04-22">
       <description>
         <p>Follow-up packaging sync for the 1.0.12 dashboard update.</p>

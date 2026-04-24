@@ -61,6 +61,7 @@ sudo snap connect system-glancer:network-observe
 - The Snap package ships AppStream metadata from `snap/local/system-glancer.metainfo.xml`.
 - The dashboard relies on `hardware-observe`, `mount-observe`, `system-observe`, `process-control`, and `network-observe` for full Linux telemetry.
 - Network gateway and subnet details are collected from `ip -j addr show` and `ip -j route show` inside the sandbox.
+- Snap launches the app through a dedicated wrapper script so Electron starts with `--ozone-platform=x11` before Chromium initializes.
 
 ## Versioning
 
@@ -70,6 +71,10 @@ Follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). Versio
 
 - The app is optimized for Ubuntu and gracefully degrades when optional tools like `sensors` are not installed.
 - Process and disk metrics are collected in the main process and exposed via IPC.
+- Linux development startup uses `vite-plugin-electron` `onstart()` to inject `--ozone-platform=x11` before Electron starts.
+- Linux package builds wrap the Electron binary during packaging and inject `--ozone-platform=x11` before Chromium initializes.
+- Snap uses its own launcher wrapper for the same X11 fallback because the snap runtime command chain is separate from `electron-builder` packaging.
+- Explicit user overrides via `--ozone-platform`, `--ozone-platform-hint`, or `ELECTRON_OZONE_PLATFORM_HINT` are still respected outside the snap launcher wrapper.
 
 ## License
 

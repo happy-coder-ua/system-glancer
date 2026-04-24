@@ -1,7 +1,7 @@
 {
   "name": "system-glancer",
   "productName": "System Glancer",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Ubuntu system monitor desktop app inspired by Glances",
   "author": {
     "name": "Serhii Kaminskyi",
@@ -28,6 +28,7 @@
   "build": {
     "appId": "com.serhiikaminskyi.system-glancer",
     "productName": "System Glancer",
+    "afterPack": "build/after-pack.cjs",
     "directories": {
       "output": "release"
     },

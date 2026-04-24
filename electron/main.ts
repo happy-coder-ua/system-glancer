@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { access, readFile, readdir, statfs } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import Store from 'electron-store';
@@ -9,6 +10,56 @@ import Store from 'electron-store';
 const execFileAsync = promisify(execFile);
 const store = new Store();
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+
+function hasCliSwitch(name: string): boolean {
+  return process.argv.some((argument) => argument === `--${name}` || argument.startsWith(`--${name}=`));
+}
+
+function hasAvailableWaylandSocket(): boolean {
+  const runtimeDir = process.env.XDG_RUNTIME_DIR;
+  const waylandDisplay = process.env.WAYLAND_DISPLAY;
+
+  if (!runtimeDir || !waylandDisplay) {
+    return false;
+  }
+
+  const socketPath = path.join(runtimeDir, waylandDisplay);
+  return existsSync(socketPath);
+}
+
+function configureLinuxDisplayBackend(): void {
+  if (process.platform !== 'linux') {
+    return;
+  }
+
+  if (hasCliSwitch('ozone-platform') || hasCliSwitch('ozone-platform-hint')) {
+    return;
+  }
+
+  if (typeof process.env.ELECTRON_OZONE_PLATFORM_HINT === 'string' && process.env.ELECTRON_OZONE_PLATFORM_HINT.length > 0) {
+    return;
+  }
+
+  const hasWaylandDisplay = hasAvailableWaylandSocket();
+  const hasX11Display = typeof process.env.DISPLAY === 'string' && process.env.DISPLAY.length > 0;
+  const sessionType = process.env.XDG_SESSION_TYPE?.toLowerCase();
+
+  if (hasWaylandDisplay) {
+    app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
+    return;
+  }
+
+  if (sessionType === 'wayland' && hasX11Display) {
+    app.commandLine.appendSwitch('ozone-platform', 'x11');
+    return;
+  }
+
+  if (hasX11Display) {
+    app.commandLine.appendSwitch('ozone-platform', 'x11');
+  }
+}
+
+configureLinuxDisplayBackend();
 
 interface CpuTimesSnapshot {
   idle: number;
